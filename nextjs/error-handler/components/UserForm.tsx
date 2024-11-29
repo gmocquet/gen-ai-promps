@@ -15,7 +15,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function UserForm() {
-  const [clientValidation, setClientValidation] = useState(true)
+  const [clientValidation, setClientValidation] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [state, dispatch] = useActionState(submitUserData, null)
   const [submissionTime, setSubmissionTime] = useState<string | null>(null)
@@ -23,7 +23,7 @@ export function UserForm() {
   const form = useForm<UserFormData>({
     resolver: clientValidation ? zodResolver(userSchema) : undefined,
     defaultValues: {
-      name: 'John',
+      name: '',
       email: 'jdoe@acme.com',
       age: 25,
       bio: 'I\'m an American',
@@ -38,14 +38,18 @@ export function UserForm() {
           formData.append(key, value.toString())
         }
       })
-      console.log('Form data on client:', form.getValues())
-      console.log('Emit formData to server:')
-      console.log(formData)
+      console.log('Data emit to server-side:', form.getValues())
       dispatch(formData)
     })
   }
 
   useEffect(() => {
+    if (!state) {
+      return
+    }
+
+    console.log('Data received from server-side: ', state)
+
     if (state?.success) {
       // form.reset()
       setSubmissionTime(state.timeField)

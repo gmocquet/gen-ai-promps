@@ -52,10 +52,8 @@ export async function submitUserData(prevState: any, formData: FormData) {
     if (!error) {
       return { success: false, errors: { server: 'Unknow error' }}
     }      
-    
-    console.error(`[${error.name}] ${error.message}`)
 
-    console.log("---------")
+    console.error(`[${error.name}] ${error.message}`)
 
     if (error.code === 'P2002' && error.meta?.target?.includes('timeField')) {
       return {
