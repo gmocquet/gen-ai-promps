@@ -4,6 +4,10 @@ NextJS 15 - React 19 rc - zod - react-hook-form - client & server validation
 
 # v0.dev AI Prompt
 
+## AI generated NextJS App demo
+
+https://github.com/user-attachments/assets/daf47572-2a69-459c-a3e0-76d48b6984e1
+
 ## Optimized prompt using Claude 3.5 Sonnet
 
 Create a Form page to collect and store user input in a database using NextJS 15.0.3 (App Router) and React 19-rc.
