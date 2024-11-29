@@ -13,12 +13,14 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ServerActionResponse, ErrorTypeGuards } from '../lib/types'
 
 export function UserForm() {
   const [clientValidation, setClientValidation] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [state, dispatch] = useActionState(submitUserData, null)
+  const [state, dispatch] = useActionState<ServerActionResponse, FormData>(submitUserData, null)
   const [submissionTime, setSubmissionTime] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const form = useForm<UserFormData>({
     resolver: clientValidation ? zodResolver(userSchema) : undefined,
@@ -50,13 +52,21 @@ export function UserForm() {
 
     console.log('Data received from server-side: ', state)
 
-    if (state?.success) {
-      // form.reset()
-      setSubmissionTime(state.timeField)
-    } else if (state?.errors) {
-      Object.entries(state.errors).forEach(([key, value]) => {
-        form.setError(key as keyof UserFormData, { type: 'server', message: value })
-      })
+    if (state.success) {
+      setSubmissionTime(state.data.timeField)
+      setServerError(null)
+      form.reset()
+    } else {
+      if (ErrorTypeGuards.isZodValidationError(state.error)) {
+        Object.entries(state.error.errors).forEach(([key, value]) => {
+          form.setError(key as keyof UserFormData, { type: 'server', message: value })
+        })
+        setServerError(null)
+      } else if (ErrorTypeGuards.isDatabaseError(state.error) || 
+                 ErrorTypeGuards.isPermissionError(state.error) || 
+                 ErrorTypeGuards.isUnknownError(state.error)) {
+        setServerError(state.error.message)
+      }
     }
   }, [state, form])
 
@@ -133,6 +143,11 @@ export function UserForm() {
             </Button>
           </form>
         </Form>
+        {serverError && (
+          <Alert className="mt-4">
+            <AlertDescription>{serverError}</AlertDescription>
+          </Alert>
+        )}
         {submissionTime && (
           <Alert className="mt-4">
             <AlertDescription>
