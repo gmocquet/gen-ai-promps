@@ -49,8 +49,14 @@ export async function submitUserData(prevState: any, formData: FormData) {
       timeField: createdUser.timeField.toISOString(),
     };
   } catch (error) {
-    console.error('Database error:');
-    console.error(error)
+    if (!error) {
+      return { success: false, errors: { server: 'Unknow error' }}
+    }      
+    
+    console.error(`[${error.name}] ${error.message}`)
+
+    console.log("---------")
+
     if (error.code === 'P2002' && error.meta?.target?.includes('timeField')) {
       return {
         success: false,
