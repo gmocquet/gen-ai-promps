@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { userSchema } from './schema';
 
 // Success response type
 export type SuccessServerActionResponse = {

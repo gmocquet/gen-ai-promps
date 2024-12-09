@@ -12,15 +12,14 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ServerActionResponse, ErrorTypeGuards } from '../lib/types'
+import { ErrorTypeGuards } from '../lib/types'
 
 export function UserForm() {
   const [clientValidation, setClientValidation] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [submissionTime, setSubmissionTime] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
-  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-
+  
   const form = useForm<UserFormData>({
     resolver: clientValidation ? zodResolver(userSchema) : undefined,
     defaultValues: {
@@ -32,7 +31,6 @@ export function UserForm() {
   })
 
   const onSubmit = useCallback(async (data: UserFormData) => {
-    setFormState('submitting')
     setServerError(null)
     setSubmissionTime(null)
 
@@ -47,11 +45,9 @@ export function UserForm() {
         const result = await submitUserData(formData)
 
         if (result.success) {
-          setFormState('success')
           setSubmissionTime(new Date().toISOString())
           form.reset()
         } else {
-          setFormState('error')
           if (ErrorTypeGuards.isZodValidationError(result.error)) {
             Object.entries(result.error.errors).forEach(([key, value]) => {
               form.setError(key as keyof UserFormData, { type: 'server', message: value })
@@ -65,11 +61,10 @@ export function UserForm() {
           }
         }
       } catch (error) {
-        setFormState('error')
-        setServerError('An unexpected error occurred. Please try again.')
+        setServerError('An unexpected error occurred. Please try again. ' + error.toString())
       }
     })
-  }, [form, clientValidation])
+  }, [form])
 
   return (
     <Card className="w-full max-w-md">
@@ -139,8 +134,8 @@ export function UserForm() {
               />
               <label htmlFor="client-validation">Enable client-side validation</label>
             </div>
-            <Button type="submit" disabled={formState === 'submitting'}>
-              {formState === 'submitting' ? 'Submitting...' : 'Submit'}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Submitting...' : 'Submit'}
             </Button>
           </form>
         </Form>
