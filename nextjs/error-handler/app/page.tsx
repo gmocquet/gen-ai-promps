@@ -1,10 +1,9 @@
-import { UserForm } from '../components/UserForm'
+import { ReactVersionChecker } from '@/components/ReactVersionChecker'
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <UserForm />
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <ReactVersionChecker />
+    </main>
   )
 }
-

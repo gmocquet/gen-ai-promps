@@ -1,0 +1,4 @@
+{
+  "packageManager": "pnpm",
+  "reject": ["eslint", "@types/node"]
+}

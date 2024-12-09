@@ -5,8 +5,9 @@ import { userSchema } from './schema';
 export type SuccessServerActionResponse = {
   success: true;
   data: {
-    createdAt: string;
-    timeField: string;
+    createdAt?: string;
+    timeField?: string;
+    rawData?: RawJsonData;
   };
 };
 
@@ -31,10 +32,15 @@ export type UnknownError = {
   message: string;
 };
 
+export type EmptyResultError = {
+  type: 'EmptyResultError';
+  message: string;
+};
+
 // Combined error type
 export type ErrorServerActionResponse = {
   success: false;
-  error: ZodValidationError | DatabaseError | PermissionError | UnknownError;
+  error: ZodValidationError | DatabaseError | PermissionError | UnknownError | EmptyResultError;
 };
 
 // ServerActionResponse type
@@ -57,6 +63,10 @@ export class ErrorTypeGuards {
   static isUnknownError(error: ErrorServerActionResponse['error']): error is UnknownError {
     return error.type === 'UnknownError';
   }
+
+  static isEmptyResultError(error: ErrorServerActionResponse['error']): error is EmptyResultError {
+    return error.type === 'EmptyResultError';
+  }
 }
 
 // Helper function to create a Zod validation error response
@@ -75,6 +85,17 @@ export function createErrorResponse(type: 'DatabaseError' | 'PermissionError' | 
   return {
     success: false,
     error: { type, message },
+  };
+}
+
+// New type for raw JSON data
+export type RawJsonData = Record<string, any>;
+
+// Add a new helper function for creating EmptyResultError
+export function createEmptyResultError(message: string): ErrorServerActionResponse {
+  return {
+    success: false,
+    error: { type: 'EmptyResultError', message },
   };
 }
 

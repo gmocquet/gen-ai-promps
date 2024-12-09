@@ -60,3 +60,38 @@ export async function submitUserData(prevState: any, formData: FormData): Promis
   }
 }
 
+export async function fetchUserData(): Promise<ServerActionResponse> {
+  try {
+    const users = await prisma.userInput.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 10, // Limit to the last 10 entries
+    });
+
+    if (users.length === 0) {
+      return createEmptyResultError('No user data found');
+    }
+
+    const rawData = users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      age: user.age,
+      bio: user.bio,
+      createdAt: user.createdAt.toISOString(),
+      timeField: user.timeField.toISOString(),
+    }));
+
+    return {
+      success: true,
+      data: {
+        rawData,
+      },
+    };
+  } catch (error) {
+    console.error(`[${error.name}] ${error.message}`);
+    return createErrorResponse('DatabaseError', 'Failed to fetch user data. Please try again.');
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
