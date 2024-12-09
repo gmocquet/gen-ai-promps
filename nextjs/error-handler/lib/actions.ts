@@ -6,8 +6,8 @@ import { ServerActionResponse, createZodValidationError, createErrorResponse } f
 
 const prisma = new PrismaClient()
 
-export async function submitUserData(prevState: any, formData: FormData): Promise<ServerActionResponse> {
-  console.log('Received form data on server:', Object.fromEntries(formData));
+export async function submitUserData(formData: FormData): Promise<ServerActionResponse> {
+  console.log('Received form data on server:', Object.fromEntries(formData))
 
   const validatedFields = userSchema.safeParse({
     name: formData.get('name'),

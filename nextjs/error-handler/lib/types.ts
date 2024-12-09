@@ -44,7 +44,7 @@ export type ErrorServerActionResponse = {
 };
 
 // ServerActionResponse type
-export type ServerActionResponse = SuccessServerActionResponse | ErrorServerActionResponse;
+export type ServerActionResponse = SuccessServerActionResponse | ErrorServerActionResponse | null;
 
 // Type guard class
 export class ErrorTypeGuards {

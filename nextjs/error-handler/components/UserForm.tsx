@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import React, { useState, useTransition, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useActionState } from 'react'
 import { userSchema, UserFormData } from '../lib/schema'
 import { submitUserData } from '../lib/actions'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
@@ -18,9 +17,9 @@ import { ServerActionResponse, ErrorTypeGuards } from '../lib/types'
 export function UserForm() {
   const [clientValidation, setClientValidation] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [state, dispatch] = useActionState<ServerActionResponse, FormData>(submitUserData, null)
   const [submissionTime, setSubmissionTime] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
 
   const form = useForm<UserFormData>({
     resolver: clientValidation ? zodResolver(userSchema) : undefined,
@@ -32,43 +31,45 @@ export function UserForm() {
     },
   })
 
-  const onSubmit = (data: UserFormData) => {
-    startTransition(() => {
-      const formData = new FormData()
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-          formData.append(key, value.toString())
-        }
-      })
-      console.log('Data emit to server-side:', form.getValues())
-      dispatch(formData)
-    })
-  }
+  const onSubmit = useCallback(async (data: UserFormData) => {
+    setFormState('submitting')
+    setServerError(null)
+    setSubmissionTime(null)
 
-  useEffect(() => {
-    if (!state) {
-      return
-    }
-
-    console.log('Data received from server-side: ', state)
-
-    if (state.success) {
-      setSubmissionTime(state.data.timeField)
-      setServerError(null)
-      form.reset()
-    } else {
-      if (ErrorTypeGuards.isZodValidationError(state.error)) {
-        Object.entries(state.error.errors).forEach(([key, value]) => {
-          form.setError(key as keyof UserFormData, { type: 'server', message: value })
+    startTransition(async () => {
+      try {
+        const formData = new FormData()
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value.toString())
+          }
         })
-        setServerError(null)
-      } else if (ErrorTypeGuards.isDatabaseError(state.error) || 
-                 ErrorTypeGuards.isPermissionError(state.error) || 
-                 ErrorTypeGuards.isUnknownError(state.error)) {
-        setServerError(state.error.message)
+        const result = await submitUserData(formData)
+
+        if (result.success) {
+          setFormState('success')
+          setSubmissionTime(new Date().toISOString())
+          form.reset()
+        } else {
+          setFormState('error')
+          if (ErrorTypeGuards.isZodValidationError(result.error)) {
+            Object.entries(result.error.errors).forEach(([key, value]) => {
+              form.setError(key as keyof UserFormData, { type: 'server', message: value })
+            })
+          } else if (
+            ErrorTypeGuards.isDatabaseError(result.error) ||
+            ErrorTypeGuards.isPermissionError(result.error) ||
+            ErrorTypeGuards.isUnknownError(result.error)
+          ) {
+            setServerError(result.error.message)
+          }
+        }
+      } catch (error) {
+        setFormState('error')
+        setServerError('An unexpected error occurred. Please try again.')
       }
-    }
-  }, [state, form])
+    })
+  }, [form, clientValidation])
 
   return (
     <Card className="w-full max-w-md">
@@ -85,7 +86,7 @@ export function UserForm() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,7 +99,7 @@ export function UserForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" value={field.value ?? ''} />
+                    <Input {...field} type="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -111,7 +112,7 @@ export function UserForm() {
                 <FormItem>
                   <FormLabel>Age</FormLabel>
                   <FormControl>
-                    <Input {...field} type="number" value={field.value ?? ''} />
+                    <Input {...field} type="number" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -124,7 +125,7 @@ export function UserForm() {
                 <FormItem>
                   <FormLabel>Bio</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value ?? ''} />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,8 +139,8 @@ export function UserForm() {
               />
               <label htmlFor="client-validation">Enable client-side validation</label>
             </div>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Submitting...' : 'Submit'}
+            <Button type="submit" disabled={formState === 'submitting'}>
+              {formState === 'submitting' ? 'Submitting...' : 'Submit'}
             </Button>
           </form>
         </Form>
